@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Sep 18 20:53:24 2017
+
+@author: kaitlingallagher
+"""
+
+#Coding challenge #1
+
+#1: Open the fasta file and save it	to a	 variable as	a list
+fh = open("/Users/kaitlingallagher/Documents/EEB5300/PitaIlluminaGeneSet.fasta", "r")
+Pita_lines = fh.readlines()
+
+#2. Print the number of genes
+NumGenes = 0
+for i in Pita_lines:
+    if i[0] == ">":
+        NumGenes = NumGenes + 1
+print (NumGenes)
+#490 genes
+
+#3a. Print the minimum length and the name of the sequence with minimum length
+NameGenes = []
+for i in Pita_lines:
+    if i[0] == ">":
+        NameGenes.append(i)
+        
+SeqGenes = []
+for i in Pita_lines:
+    if i[0] != ">":
+        SeqGenes.append(i)
+
+LenGene = []
+for i in SeqGenes:
+    LenGene.append(len(i))
+
+N = LenGene.index(min(LenGene))
+MinGene = NameGenes[N]
+MinSeq = LenGene[N]
+print ("The minimum sequence length is", MinSeq, "and the name of the gene is", MinGene)
+
+#3b. Print the maximum length and the name of the sequence with maximum length
+
+M = LenGene.index(max(LenGene))
+MaxGene = NameGenes[M]
+MaxSeq = LenGene[M]
+print ("The maximum sequence length is", MaxSeq, "and the name of the gene is", MaxGene)
+
+#3c. Print the average length of the sequences
+
+Avg = sum(LenGene)/len(LenGene)
+print ("The average sequence length is:", Avg)
+
+#4. Ouput a file with sequence names whose length is less than 500 base pairs and their sequences
+SubGeneName = []
+SubGeneSeq = []
+for i in SeqGenes:
+    if len(i) < 500:
+        SubGeneSeq.append(i)
+        SubGeneName.append(NameGenes[SeqGenes.index(i)])
+print ("The number of sequences with less than 500 base pairs is:", len(SubGeneName))
+
+fh1 = open("/Users/kaitlingallagher/Documents/EEB5300/500bpSeq.fasta", "w")
+text = [SubGeneName[0], SubGeneSeq[0], SubGeneName[1], SubGeneSeq[1], SubGeneName[2], SubGeneSeq[2], SubGeneName[3], SubGeneSeq[3], SubGeneName[4], SubGeneSeq[4], SubGeneName[5], SubGeneSeq[5],SubGeneName[6], SubGeneSeq[6]]
+fh1.writelines(text)
+fh1.close()
