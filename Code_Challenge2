@@ -1,0 +1,207 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Oct  1 19:24:54 2017
+
+@author: kaitlingallagher
+"""
+
+#Coding challenge 2
+
+#1. How many genes are present in the gff file
+fh = open("/Users/kaitlingallagher/Documents/EEB5300/Pita_MakerAlignments.gff3", "r")
+Pita_lines = fh.readlines()
+
+NumGenes = 0
+for line in Pita_lines:
+    if line[0] != "#":
+        column = line.split("\t")
+        if column[2] == "gene":
+            NumGenes=NumGenes+1
+
+print (NumGenes)
+#1743 genes
+
+
+#2. How many multiexonic genes are found in the gff file?
+
+GeneName = []
+Exons = []
+for line in Pita_lines:
+    if line[0] != "#":
+        column = line.split("\t")
+        if column[2] == "gene":
+            GeneName.append(column[8])
+        if column[2] == "exon":
+            Exons.append(column[8])
+
+NameGenes = []
+for line in GeneName:
+    col = line.split(";")
+    NameGenes.append(col[1]) 
+
+NameExons = []
+for line in Exons:
+    col2 = line.split(";")
+    NameExons.append(col2[1]) 
+##this saves just the gene name for each exon, so if its monoexonic the name will only be in there once. 
+##If multi than name will be in there several times. Can then use code below to count number of times name appears
+
+##NameGenes list has "\n" following gene names but NameExons doesn't, need to getrid of it
+Genes = []
+for line in NameGenes:
+    line=line.rstrip('\n')
+    Genes.append(line)
+
+counts = []
+for i in Genes:
+    g = NameExons.count(i)
+    counts.append(g)
+print (counts)
+
+Multi = 0
+for i in counts:
+    if i > 1:
+        Multi=Multi+1
+print(Multi)
+#977 multiexonic genes    
+
+
+#3. How many monoexonic genes are there?
+
+Mono = 0
+for i in counts:
+    if i == 1:
+        Mono=Mono+1
+print(Mono)
+#766 monoexonic genes
+
+
+#4. Basic stats:
+#make lists for start & stop numbers
+starts = []
+stops = []
+for line in Pita_lines:
+    if line[0] != "#":
+        coln = line.split("\t")
+        if coln[2] == "exon": 
+            starts.append(coln[3])
+            stops.append(coln[4])
+
+#can't do subtraction with strings (numbers in list are strings currently), turn them into integers:
+in_starts = [int(x) for x in starts]
+in_stops = [int(x) for x in stops] 
+
+#Length of all the exons:
+LenExon = [x1 - x2 for (x1, x2) in zip(in_stops, in_starts)]
+
+#4a. Minimum exon length:
+a = min(LenExon)
+print (a)
+#Min exon  = 1
+
+#4b. Maximum exon length:
+b = max(LenExon)
+print (b)
+#max exon = 5372
+
+#4c. Average exon length:
+c = sum(LenExon)/float(len(LenExon))
+print(c)
+#average = 416.38620949510175
+
+#4d. Median exon length:
+import statistics
+d = statistics.median(LenExon)
+print (d)
+#median = 193.0
+
+
+#5.Create a new gff file
+
+#saving index number for all the multiexonic genes, use these index numbers (made sure the counts match up 
+#to the names) to pull out gene names from list Multigenes (created in #2 for counting multiexonic genes)
+Index_Multi = []
+Index = -1
+for i in counts:
+    Index=Index+1
+    if i != 1:
+       Index_Multi.append(Index)
+       
+#getting gene names from list of gene names I created in list #2:
+Multi_Genes = []
+for i in Index_Multi:
+    Multi_Genes.append(Genes[i])
+    
+##Need to get index number for all the appropraite genes (using the gene names I just pulled above) 
+#from the original file  so I can pull the right lines
+All_genes = []
+for line in Pita_lines:
+    if line[0] != "#":
+        column = line.split("\t")  
+        All_genes.append(column[8])
+
+All = []
+for line in All_genes:
+    column = line.split(";")
+    All.append(column[1])
+#this gave me just the names, need to remove \n though
+
+AllGenes = []
+for line in All:
+    line=line.rstrip('\n')
+    AllGenes.append(line)
+
+#get index numbers for all lines that have a gene name in the list of multiexonic gene names (created above)    
+Needed_Index = [] 
+Index = -1       
+for i in AllGenes:
+    Index=Index+1
+    if i in Multi_Genes:
+        Needed_Index.append(Index)
+
+#need to remove lines starting with # to make sure I am pulling the correct lines since the index numbers above
+#are not based on not having those lines there
+fh1 = open("/Users/kaitlingallagher/Documents/EEB5300/New_lines.gff", "w")
+lines = []
+for line in Pita_lines:
+    if line[0] != "#":
+        lines.append(line)
+fh1.writelines(lines)
+fh1.close()
+
+fh2 = open("/Users/kaitlingallagher/Documents/EEB5300/New_lines.gff", "r")
+New_Pita_lines = fh2.readlines()       
+       
+#pulling lines that have gene name that I know from list are multiexonic
+fh3 = open("/Users/kaitlingallagher/Documents/EEB5300/Lines.gff", "w")
+LinesNeeded = []
+for i in Needed_Index:
+    a = New_Pita_lines[i]
+    LinesNeeded.append(a)
+fh3.writelines(LinesNeeded)
+fh3.close()
+
+fh4 = open("/Users/kaitlingallagher/Documents/EEB5300/Lines.gff", "r") 
+NewLine = fh4.readlines()  
+
+#now need to figure out which genes may have exons below 20 bases so I can remove them
+names = []#save names of genes so I know which to delete if they are below 20
+for line in NewLine:
+    coln = line.split("\t")
+    if coln[2] == "exon" and (int(coln[4])-int(coln[3]))<20: 
+        names.append(coln[0])#names (just using first column since this is the easiest to access) that need to be removed cause it has exons less than 20
+#43 names were put into the file so 43 of the multiexonic genes had at least one exon with less than 20 bases
+
+#removing genes that have any exons less than 20:        
+for line in NewLine:
+    coln = line.split("\t")
+    if coln[0] in names:
+        NewLine.remove(line) #removes appropraite lines
+
+#write to proper gff file:
+fh5 = open("/Users/kaitlingallagher/Documents/EEB5300/Pita_Multiexonic2.gff", "w")
+fh5.writelines(NewLine)
+fh5.close()
+#this wrote 10850 lines
+   
