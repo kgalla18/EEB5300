@@ -1,0 +1,150 @@
+#Kaitlin Gallagher
+
+from Bio import SeqIO
+
+##1: Load the fasta file and save it as a list
+SeqList=list(SeqIO.parse("/tempdata3/KGalla/5300/In_Class_Python/Challenge3/Adarlingi_v1.fna", "fasta"))
+
+
+##2: Make lists for gene names, chromosome on which the gene is found, Gene Start, Gene End, Strand on which the Gene is f$
+
+fh = open("/tempdata3/KGalla/5300/In_Class_Python/Challenge3/Adarlingi_v1.gff", "r")
+Adar_lines = fh.readlines()
+
+Gene = open("/tempdata3/KGalla/5300/In_Class_Python/Challenge3/genes.txt", "r")
+GeneName = Gene.readlines()
+
+Genes = [] #list of gene names with \n removed from end for use for rest of problem
+for i in GeneName:
+    N=i.rstrip('\n')
+    Genes.append(N)
+print (len(Genes))
+##Answer: 35
+
+
+Chrm = []
+for line in Adar_lines:
+    if line[0] != "#":
+        column = line.split("\t")
+        Gene=column[8].split(";")
+        Name=Gene[1].strip("Name=")
+        if Name in Genes:
+          Chrm.append(column[0])
+print (len(Chrm))
+
+
+GeneStart = []
+for line in Adar_lines:
+    if line[0] != "#":
+        column = line.split("\t")
+        Gene=column[8].split(";")
+        Name=Gene[1].strip("Name=")
+        if Name in Genes:
+            GeneStart.append(column[3])
+print (len(GeneStart))
+
+
+GeneEnd = []
+for line in Adar_lines:
+    if line[0] != "#":
+        column = line.split("\t")
+        Gene=column[8].split(";")
+        Name=Gene[1].strip("Name=")
+        if Name in Genes:
+            GeneEnd.append(column[4])
+print (len(GeneEnd))
+
+
+Strand = []
+for line in Adar_lines:
+    if line[0] != "#":
+        column = line.split("\t")
+        Gene=column[8].split(";")
+        Name=Gene[1].strip("Name=")
+        if Name in Genes:
+            Strand.append(column[6])
+print (len(Strand))
+
+
+#3.
+Genes_with_GATA = []
+Promot=[]
+Index = -1
+record_dict = SeqIO.index("/tempdata3/KGalla/5300/In_Class_Python/Challenge3/Adarlingi_v1.fna", "fasta")
+for i in Chrm:
+    Index=Index+1
+    seq=record_dict[i].seq
+    S=int(GeneStart[Index])-500
+    E=int(GeneStart[Index])-1
+    if Strand[Index] == "+":
+         Prom=seq[S:E]
+         Promot.append(Prom)
+    else:
+	Prom2=seq[S:E].reverse_complement()
+        Promot.append(Prom2)
+
+In_with_GATA = [] #this is index numbers of the genes I will need for #4
+Index = -1
+NumProm = 0
+for i in Promot:
+    Index=Index+1
+    Upper=i.upper()
+    GATA=Upper.count("GATA")
+    if GATA != 0:
+        NumProm=NumProm+1
+        In_with_GATA.append(Index) #so I now the index number for the genes with GATA
+print("There are", NumProm, "with GATA in the promoter region.")
+
+
+#4.
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+
+Seq_for_fa = []
+for i in In_with_GATA:
+    a=Chrm[i]
+    seq=record_dict[a].seq
+    S=int(GeneStart[i])-500
+    E=int(GeneEnd[i])
+    Seqs=seq[S:E]
+    print (Seqs)
+    Seq_for_fa.append(str(Seqs))
+print (len(Seq_for_fa))
+
+SeqID_for_fa = []
+for i in In_with_GATA:
+    a=Chrm[i]
+    id=record_dict[a].id
+    SeqID_for_fa.append(id)
+print (len(SeqID_for_fa))
+
+Desc_for_fa = []
+for i in In_with_GATA:
+    a=Chrm[i]
+    desc=record_dict[a].description
+    Desc_for_fa.append(desc)
+print (len(Desc_for_fa))
+
+
+Records = []
+In=list(range(0, 26))
+for i in In:
+    rec = SeqRecord(Seq(Seq_for_fa[i]), id = SeqID_for_fa[i], description = Desc_for_fa[i], name = Chrm[i])
+    Records.append(rec)
+
+with open("Adarlingi_New.fna", "w") as handle:
+    SeqIO.write(Records, handle, "fasta")
+handle.close
+
+
+#checking number of sequences in new fasta file
+fh3 = open("/tempdata3/KGalla/5300/In_Class_Python/Challenge3/Adarlingi_New.fna", "r")
+Adar_lines2 = fh3.readlines()
+
+Lines = 0
+for i in Adar_lines2:
+        if i[0] == ">":
+                Lines=Lines+1
+
+print (Lines)
+#has 26 genes so it looks good!
